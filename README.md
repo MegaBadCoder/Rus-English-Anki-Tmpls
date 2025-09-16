@@ -1,6 +1,6 @@
 # Irregular English Verbs - Anki Deck Generator
 
-![Демонстрация](./intro.mp4)
+![Демонстрация](./intro.gif)
 
 *Демонстрация работы интерактивных карточек*
 
