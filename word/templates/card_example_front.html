@@ -1,0 +1,11 @@
+<div class="translation">{{Translation}}</div>
+<div class="example">
+    <div class="example-ru">{{ExampleRu}}</div>
+</div>
+<br>
+<div style="font-size: 16px; color: #666;">Составьте английское предложение:</div>
+<input type="text" id="input_example" placeholder="Type the English sentence" 
+    style="width: 90%;" 
+    oninput="localStorage.setItem('userAnswerExample_{{Word}}', this.value)" 
+    onblur="localStorage.setItem('userAnswerExample_{{Word}}', this.value)">
+

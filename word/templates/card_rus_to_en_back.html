@@ -1,0 +1,19 @@
+<div class="translation">{{Translation}}</div>
+<div class="word"><strong>{{Word}}</strong></div>
+<div class="transcription">{{Transcription}}</div>
+<div class="example">
+    <div class="example-en">{{ExampleEn}}</div>
+    <div class="example-ru">{{ExampleRu}}</div>
+</div>
+<div class="audio-buttons">
+    {{#AudioUrl}}<button onclick="var audio = new Audio('{{AudioUrl}}'); audio.play();" style="background: #2196F3; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer; margin-left: 10px;">🔊 Audio</button>{{/AudioUrl}}
+</div>
+<hr>
+<div id="feedback_word" class="feedback"></div>
+<script>
+(function() {
+    var userAnswer = localStorage.getItem('userAnswerWord_{{Word}}') || '';
+    checkWordAnswer('feedback_word', 'userAnswerWord_{{Word}}', userAnswer, '{{Word}}');
+})();
+</script>
+
