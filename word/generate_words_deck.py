@@ -10,6 +10,24 @@ import random
 import sys
 from pathlib import Path
 
+from constants import (
+    DEFAULT_DECK_NAME,
+    DEFAULT_OUTPUT_FILE,
+    FIELD_AUDIO_URL,
+    FIELD_EXAMPLE_EN,
+    FIELD_EXAMPLE_RU,
+    FIELD_TRANSCRIPTION,
+    FIELD_TRANSLATION,
+    FIELD_WORD,
+    MODEL_ID,
+    MODEL_NAME,
+    NUM_TEMPLATES,
+    TEMPLATE_EN_TO_RUS,
+    TEMPLATE_FILES,
+    TEMPLATE_RUS_TO_EN,
+    TEMPLATES_DIR,
+)
+
 
 def inject_js_to_html(html, js_code):
     """Вставляет JavaScript код в начало HTML"""
@@ -19,13 +37,10 @@ def inject_js_to_html(html, js_code):
 
 
 class TemplateLoader:
-    """Класс для загрузки шаблонов из файлов"""
-
-    def __init__(self, templates_dir="templates"):
+    def __init__(self, templates_dir=TEMPLATES_DIR):
         self.templates_dir = Path(__file__).parent / templates_dir
 
     def load_file(self, filename):
-        """Загружает содержимое файла"""
         file_path = self.templates_dir / filename
         try:
             with open(file_path, "r", encoding="utf-8") as f:
@@ -38,16 +53,12 @@ class TemplateLoader:
             sys.exit(1)
 
     def load_css(self):
-        """Загружает CSS стили"""
         return self.load_file("styles.css")
 
     def load_js(self):
-        """Загружает JavaScript код"""
-        check_js = self.load_file("check_answer.js")
-        return check_js
+        return self.load_file("check_answer.js")
 
     def load_card_template(self, front_file, back_file):
-        """Загружает HTML шаблоны для карточки"""
         return {
             "front": self.load_file(front_file),
             "back": self.load_file(back_file),
@@ -55,47 +66,33 @@ class TemplateLoader:
 
 
 def create_card_model():
-    """Создает одну модель карточек с несколькими шаблонами для Anki"""
     loader = TemplateLoader()
 
-    # Загружаем общие ресурсы
     css = loader.load_css()
     js_code = loader.load_js()
 
-    # Загружаем шаблоны карточек
-    en_to_rus = loader.load_card_template(
-        "card_en_to_rus_front.html", "card_en_to_rus_back.html"
-    )
-    rus_to_en = loader.load_card_template(
-        "card_rus_to_en_front.html", "card_rus_to_en_back.html"
-    )
-    example = loader.load_card_template(
-        "card_example_front.html", "card_example_back.html"
-    )
+    en_to_rus = loader.load_card_template(*TEMPLATE_FILES["en_to_rus"])
+    rus_to_en = loader.load_card_template(*TEMPLATE_FILES["rus_to_en"])
 
-    # Одна модель с несколькими шаблонами
-    # Каждый шаблон создает свой тип карточки из одних и тех же полей
     model = genanki.Model(
-        1707392319,  # Один ID для всей модели
-        "English Words",  # Одно название модели
+        MODEL_ID,
+        MODEL_NAME,
         fields=[
-            {"name": "Word"},
-            {"name": "Transcription"},
-            {"name": "Translation"},
-            {"name": "ExampleEn"},
-            {"name": "ExampleRu"},
-            {"name": "AudioUrl"},
+            {"name": FIELD_WORD},
+            {"name": FIELD_TRANSCRIPTION},
+            {"name": FIELD_TRANSLATION},
+            {"name": FIELD_EXAMPLE_EN},
+            {"name": FIELD_EXAMPLE_RU},
+            {"name": FIELD_AUDIO_URL},
         ],
         templates=[
-            # Шаблон 1: EN → RUS (English word to Russian translation)
             {
-                "name": "EN to RUS",
+                "name": TEMPLATE_EN_TO_RUS,
                 "qfmt": inject_js_to_html(en_to_rus["front"], js_code),
                 "afmt": inject_js_to_html(en_to_rus["back"], js_code),
             },
-            # Шаблон 2: RUS → EN (Russian translation to English word)
             {
-                "name": "RUS to EN",
+                "name": TEMPLATE_RUS_TO_EN,
                 "qfmt": inject_js_to_html(rus_to_en["front"], js_code),
                 "afmt": inject_js_to_html(rus_to_en["back"], js_code),
             },
@@ -107,7 +104,6 @@ def create_card_model():
 
 
 def load_words_from_csv(csv_file):
-    """Загружает слова из CSV файла"""
     words = []
     try:
         with open(csv_file, "r", encoding="utf-8") as file:
@@ -119,12 +115,8 @@ def load_words_from_csv(csv_file):
                         "transcription": row["transcription"].strip(),
                         "translation": row["translation"].strip(),
                         "example_en": row["example_en"].strip(),
-                        "example_ru": (
-                            row["example_ru"].strip() if "example_ru" in row else ""
-                        ),
-                        "audio_url": (
-                            row["audio_url"].strip() if "audio_url" in row else ""
-                        ),
+                        "example_ru": row.get("example_ru", "").strip(),
+                        "audio_url": row.get("audio_url", "").strip(),
                     }
                 )
     except FileNotFoundError:
@@ -137,24 +129,13 @@ def load_words_from_csv(csv_file):
     return words
 
 
-def create_deck(words, deck_name="English Words", shuffle=False):
-    """Создает колоду Anki с карточками слов
-
-    Args:
-        words: Список слов для создания карточек
-        deck_name: Название колоды
-        shuffle: Если True, карточки будут перемешаны случайным образом
-    """
+def create_deck(words, deck_name=DEFAULT_DECK_NAME, shuffle=False):
     deck_id = random.randrange(1 << 30, 1 << 31)
     deck = genanki.Deck(deck_id, deck_name)
-
-    # Используем одну модель с несколькими шаблонами
     model = create_card_model()
 
-    # Создаем все Note сначала
     notes = []
     for word in words:
-        # Одна Note автоматически создаст карточки для всех шаблонов модели
         note = genanki.Note(
             model=model,
             fields=[
@@ -167,14 +148,11 @@ def create_deck(words, deck_name="English Words", shuffle=False):
             ],
         )
         notes.append(note)
-        # Для каждого слова будет создано 2 карточки (по одной на каждый шаблон)
 
-    # Перемешиваем карточки, если нужно
     if shuffle:
         random.shuffle(notes)
         print("Карточки перемешаны случайным образом.")
 
-    # Добавляем карточки в колоду
     for note in notes:
         deck.add_note(note)
 
@@ -187,9 +165,11 @@ def main():
     )
     parser.add_argument("csv_file", help="Путь к CSV файлу со словами")
     parser.add_argument(
-        "-o", "--output", default="english_words.apkg", help="Имя выходного файла"
+        "-o", "--output", default=DEFAULT_OUTPUT_FILE, help="Имя выходного файла"
     )
-    parser.add_argument("-n", "--name", default="English Words", help="Название колоды")
+    parser.add_argument(
+        "-n", "--name", default=DEFAULT_DECK_NAME, help="Название колоды"
+    )
     parser.add_argument(
         "-s",
         "--shuffle",
@@ -213,13 +193,10 @@ def main():
     print(f"Генерация {args.output}...")
     genanki.Package(deck).write_to_file(args.output)
 
-    # Подсчитываем количество карточек: каждая Note создает карточки для всех шаблонов
-    num_templates = 2  # EN to RUS, RUS to EN
-    total_cards = len(words) * num_templates
-
+    total_cards = len(words) * NUM_TEMPLATES
     print(
         f"Успешно создана колода {args.output} с {total_cards} карточками "
-        f"({len(words)} слов x {num_templates} шаблонов в одной модели)"
+        f"({len(words)} слов x {NUM_TEMPLATES} шаблонов в одной модели)"
     )
 
 
