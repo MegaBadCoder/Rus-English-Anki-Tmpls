@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "Word to Dictionary",
+  "version": "1.0.0",
+  "description": "Добавить выделенное слово в словарь через n8n",
+  "permissions": [
+    "contextMenus",
+    "storage",
+    "notifications"
+  ],
+  "host_permissions": [
+    "http://*/*",
+    "https://*/*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_popup": "popup.html"
+  }
+}
